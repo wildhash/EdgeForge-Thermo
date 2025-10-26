@@ -6,35 +6,11 @@ class PlannerAgent:
     """Agent 3: Reflow profile architect"""
 
     def __init__(self, paste_path: str = "data/paste_profile.json"):
-        """
-        Initialize the PlannerAgent and load a paste profile from a JSON file.
-        
-        Loads the JSON file at `paste_path`, constructs a PasteProfile from its contents,
-        assigns it to `self.paste`, and prints a message indicating which paste profile was loaded.
-        
-        Parameters:
-            paste_path (str): Path to the JSON file containing the paste profile. Defaults to "data/paste_profile.json".
-        """
         self.paste = PasteProfile(**json.load(open(paste_path)))
         print(f"🤖 Planner Agent: Loaded {self.paste.paste_name} paste profile")
 
     def plan(self, limits: List[ComponentLimit]) -> ReflowProfile:
-        """
-        Create an optimized reflow profile that respects the paste recommendations and any provided component temperature limits.
-        
-        When component limits are provided, the peak temperature is chosen to honor the most restrictive max temperature with a 5°C safety margin and constrained to the paste's recommended peak range; when no limits are provided, the paste's recommended peak midpoint is used. The returned profile contains a sequence of timed phases (preheat, soak, ramp_to_peak, reflow, cooling), the selected peak temperature, the time above liquidus, and the total profile duration.
-        
-        Parameters:
-            limits (List[ComponentLimit]): Component-specific temperature limits used to constrain the peak temperature. If empty, paste recommendations are used.
-        
-        Returns:
-            ReflowProfile: A profile object with fields:
-                - profile_id: identifier for the generated profile
-                - steps: ordered list of ReflowStep phases with start/end times and temperatures
-                - peak_temp_c: selected peak temperature in °C
-                - time_above_liquidus_s: duration in seconds above liquidus
-                - total_duration_s: total profile duration in seconds
-        """
+        """Generate optimal reflow profile respecting all constraints"""
         print("🧠 Planner Agent: Computing optimal profile...")
 
         # Determine safe peak temp (most restrictive component - 5°C safety margin)
