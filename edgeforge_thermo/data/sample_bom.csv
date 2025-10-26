@@ -1,0 +1,7 @@
+designator,mpn,package,qty,thermal_mass,component_type
+U1,STM32F405RGT6,LQFP-64,1,high,IC
+U2,LM358DR,SOIC-8,2,medium,IC
+C1,GRM188R71C105KA12D,0603,15,low,Capacitor
+C2,GRM31CR61E226KE15L,1206,4,medium,Capacitor
+R1,RC0603FR-0710KL,0603,25,low,Resistor
+L1,WE-PD_744043330,Inductor_SMD,1,high,Inductor

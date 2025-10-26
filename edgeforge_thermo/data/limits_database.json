@@ -1,0 +1,8 @@
+{
+  "STM32F405RGT6": {"max_temp_c": 260, "max_ramp_rate_c_per_s": 3.0, "min_soak_time_s": 60, "min_time_above_liquidus_s": 45, "notes": "MCU - sensitive to thermal shock"},
+  "LM358DR": {"max_temp_c": 260, "max_ramp_rate_c_per_s": 3.0, "min_soak_time_s": 60, "min_time_above_liquidus_s": 40, "notes": "Op-amp"},
+  "GRM188R71C105KA12D": {"max_temp_c": 245, "max_ramp_rate_c_per_s": 2.5, "min_soak_time_s": 60, "min_time_above_liquidus_s": 30, "notes": "Ceramic cap - crack sensitive"},
+  "GRM31CR61E226KE15L": {"max_temp_c": 245, "max_ramp_rate_c_per_s": 2.5, "min_soak_time_s": 60, "min_time_above_liquidus_s": 30, "notes": "Ceramic cap"},
+  "RC0603FR-0710KL": {"max_temp_c": 275, "max_ramp_rate_c_per_s": 4.0, "min_soak_time_s": 45, "min_time_above_liquidus_s": 30, "notes": "Thick film resistor"},
+  "WE-PD_744043330": {"max_temp_c": 260, "max_ramp_rate_c_per_s": 3.0, "min_soak_time_s": 60, "min_time_above_liquidus_s": 45, "notes": "Power inductor - high thermal mass"}
+}
