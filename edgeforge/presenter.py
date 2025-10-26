@@ -68,25 +68,23 @@ class PresenterAgent:
         # Add max temp line
         max_temp_limit = limits.max_temp if isinstance(limits, ThermalLimits) else (limits[0].max_temp_c if limits else 260)
         ax.axhline(y=max_temp_limit, color='orange', linestyle='--', linewidth=1.5,
-                   label=f'Max Temp Limit ({limits.max_temp}°C)')
+                   label=f'Max Temp Limit ({max_temp_limit}°C)')
         
         # Shade regions
         cumulative_time = 0
         colors = ['lightblue', 'lightgreen', 'lightyellow', 'lightcoral', 'lightgray']
         
         for i, step in enumerate(profile.steps):
+            start_temp, end_temp, duration, phase = self._get_step_data(step)
             start_time = cumulative_time
-            end_time = cumulative_time + step.duration
-            
-            # Get temperature range for this step
-            temp_range = [step.start_temp, step.end_temp]
+            end_time = cumulative_time + duration
             
             ax.axvspan(start_time, end_time, alpha=0.2, color=colors[i % len(colors)])
             
             # Add step label
             mid_time = (start_time + end_time) / 2
-            mid_temp = (step.start_temp + step.end_temp) / 2
-            ax.text(mid_time, mid_temp, step.name, 
+            mid_temp = (start_temp + end_temp) / 2
+            ax.text(mid_time, mid_temp, phase, 
                    horizontalalignment='center', fontsize=9, fontweight='bold')
             
             cumulative_time = end_time
@@ -94,8 +92,14 @@ class PresenterAgent:
         # Labels and formatting
         ax.set_xlabel('Time (seconds)', fontsize=12)
         ax.set_ylabel('Temperature (°C)', fontsize=12)
-        ax.set_title(f'Reflow Profile - {profile.paste.name} ({profile.paste.alloy})', 
-                     fontsize=14, fontweight='bold')
+        
+        # Handle both profile formats
+        if hasattr(profile, 'paste'):
+            title = f'Reflow Profile - {profile.paste.name} ({profile.paste.alloy})'
+        else:
+            title = f'Reflow Profile - {profile.profile_id}'
+        ax.set_title(title, fontsize=14, fontweight='bold')
+        
         ax.legend(loc='best', fontsize=10)
         ax.grid(True, alpha=0.3)
         
@@ -135,6 +139,49 @@ class PresenterAgent:
             max_ramp_limit = limits.max_ramp_up
             limits_type = f"Type-based ({limits.component_type})"
             limits_table = self._generate_type_limits_table(limits)
+        
+        # Handle paste section
+        if hasattr(profile, 'paste'):
+            paste_section = f"""
+    <div class="section">
+        <h2>Solder Paste Specifications</h2>
+        <table>
+            <tr><th>Property</th><th>Value</th></tr>
+            <tr><td>Name</td><td>{profile.paste.name}</td></tr>
+            <tr><td>Alloy</td><td>{profile.paste.alloy}</td></tr>
+            <tr><td>Liquidus Temperature</td><td>{profile.paste.liquidus_temp}°C</td></tr>
+            <tr><td>Peak Temperature Range</td><td>{profile.paste.peak_temp_range[0]}°C - {profile.paste.peak_temp_range[1]}°C</td></tr>
+        </table>
+    </div>
+            """
+        else:
+            paste_section = f"""
+    <div class="section">
+        <h2>Solder Paste Specifications</h2>
+        <table>
+            <tr><th>Property</th><th>Value</th></tr>
+            <tr><td>Name</td><td>SAC305</td></tr>
+            <tr><td>Liquidus Temperature</td><td>217.0°C</td></tr>
+            <tr><td>Peak Temperature</td><td>{profile.peak_temp_c}°C</td></tr>
+        </table>
+    </div>
+            """
+        
+        # Build profile steps rows
+        steps_rows = []
+        for step in profile.steps:
+            start_temp, end_temp, duration, phase = self._get_step_data(step)
+            ramp_rate = getattr(step, 'ramp_rate_c_per_s', getattr(step, 'ramp_rate', 0))
+            steps_rows.append(f"""
+            <tr>
+                <td>{phase}</td>
+                <td>{start_temp:.1f}°C</td>
+                <td>{end_temp:.1f}°C</td>
+                <td>{duration:.1f}s</td>
+                <td>{ramp_rate:.2f}°C/s</td>
+            </tr>
+            """)
+        
         # Build HTML content
         html = f"""
 <!DOCTYPE html>
@@ -220,27 +267,11 @@ class PresenterAgent:
         ''' if validation.warnings else ''}
     </div>
     
-    <div class="section">
-        <h2>Solder Paste Specifications</h2>
-        <table>
-            <tr><th>Property</th><th>Value</th></tr>
-            <tr><td>Name</td><td>{profile.paste.name}</td></tr>
-            <tr><td>Alloy</td><td>{profile.paste.alloy}</td></tr>
-            <tr><td>Liquidus Temperature</td><td>{profile.paste.liquidus_temp}°C</td></tr>
-            <tr><td>Peak Temperature Range</td><td>{profile.paste.peak_temp_range[0]}°C - {profile.paste.peak_temp_range[1]}°C</td></tr>
-        </table>
-    </div>
+    {paste_section}
     
     <div class="section">
-        <h2>Thermal Limits (Strictest)</h2>
-        <table>
-            <tr><th>Parameter</th><th>Limit</th></tr>
-            <tr><td>Maximum Temperature</td><td>{limits.max_temp}°C</td></tr>
-            <tr><td>Max Ramp Up Rate</td><td>{limits.max_ramp_up}°C/s</td></tr>
-            <tr><td>Max Ramp Down Rate</td><td>{limits.max_ramp_down}°C/s</td></tr>
-            <tr><td>Min Time Above Liquidus</td><td>{limits.min_time_above_liquidus}s</td></tr>
-            <tr><td>Max Time Above Liquidus</td><td>{limits.max_time_above_liquidus}s</td></tr>
-        </table>
+        <h2>Thermal Limits ({limits_type})</h2>
+        {limits_table}
     </div>
     
     <div class="section">
@@ -253,15 +284,7 @@ class PresenterAgent:
                 <th>Duration</th>
                 <th>Ramp Rate</th>
             </tr>
-            {''.join(f'''
-            <tr>
-                <td>{step.name}</td>
-                <td>{step.start_temp:.1f}°C</td>
-                <td>{step.end_temp:.1f}°C</td>
-                <td>{step.duration:.1f}s</td>
-                <td>{step.ramp_rate:.2f}°C/s</td>
-            </tr>
-            ''' for step in profile.steps)}
+            {''.join(steps_rows)}
         </table>
         <p><strong>Total Time:</strong> {profile.total_time:.1f}s ({profile.total_time/60:.1f} minutes)</p>
         <p><strong>Time Above Liquidus:</strong> {profile.time_above_liquidus:.1f}s</p>
@@ -309,3 +332,43 @@ class PresenterAgent:
             f.write(html)
         
         return str(output_path)
+    
+    def _generate_component_limits_table(self, limits: List) -> str:
+        """Generate HTML table for component-specific limits."""
+        rows = []
+        for limit in limits[:10]:  # Show first 10
+            rows.append(f"""
+            <tr>
+                <td>{limit.mpn}</td>
+                <td>{limit.max_temp_c}°C</td>
+                <td>{limit.max_ramp_rate_c_per_s}°C/s</td>
+                <td>{limit.min_time_above_liquidus_s}s</td>
+                <td>{limit.notes}</td>
+            </tr>
+            """)
+        
+        return f"""
+        <table>
+            <tr>
+                <th>MPN</th>
+                <th>Max Temp</th>
+                <th>Max Ramp Rate</th>
+                <th>Min TAL</th>
+                <th>Notes</th>
+            </tr>
+            {''.join(rows)}
+        </table>
+        """
+    
+    def _generate_type_limits_table(self, limits) -> str:
+        """Generate HTML table for type-based limits."""
+        return f"""
+        <table>
+            <tr><th>Parameter</th><th>Limit</th></tr>
+            <tr><td>Maximum Temperature</td><td>{limits.max_temp}°C</td></tr>
+            <tr><td>Max Ramp Up Rate</td><td>{limits.max_ramp_up}°C/s</td></tr>
+            <tr><td>Max Ramp Down Rate</td><td>{limits.max_ramp_down}°C/s</td></tr>
+            <tr><td>Min Time Above Liquidus</td><td>{limits.min_time_above_liquidus}s</td></tr>
+            <tr><td>Max Time Above Liquidus</td><td>{limits.max_time_above_liquidus}s</td></tr>
+        </table>
+        """

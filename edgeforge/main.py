@@ -124,8 +124,15 @@ def main():
     print(f"{'Step':<12} {'Start':<10} {'End':<10} {'Duration':<12} {'Ramp Rate':<12}")
     print("-" * 80)
     for step in profile.steps:
-        print(f"{step.name:<12} {step.start_temp:>6.1f}°C  {step.end_temp:>6.1f}°C  "
-              f"{step.duration:>8.1f}s    {step.ramp_rate:>8.2f}°C/s")
+        # Handle both ReflowStep and ProfileStep
+        name = getattr(step, 'phase', getattr(step, 'name', 'unknown'))
+        start_temp = getattr(step, 'start_temp_c', getattr(step, 'start_temp', 0))
+        end_temp = getattr(step, 'end_temp_c', getattr(step, 'end_temp', 0))
+        duration = getattr(step, 'duration_s', getattr(step, 'duration', 0))
+        ramp_rate = getattr(step, 'ramp_rate_c_per_s', getattr(step, 'ramp_rate', 0))
+        
+        print(f"{name:<12} {start_temp:>6.1f}°C  {end_temp:>6.1f}°C  "
+              f"{duration:>8.1f}s    {ramp_rate:>8.2f}°C/s")
     print("-" * 80)
 
 

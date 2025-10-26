@@ -55,12 +55,21 @@ class Orchestrator:
         self.presenter.output_dir = Path(output_dir)
         self.presenter.output_dir.mkdir(parents=True, exist_ok=True)
         
+        # Generate chart
+        chart_path = self.presenter.generate_chart(
+            self.context.proposed_profile,
+            self.context.component_limits
+        )
+        print(f"📈 Chart saved to: {chart_path}")
+        
+        # Generate HTML report
         report_path = self.presenter.generate_report(
             self.context.proposed_profile,
             self.context.bom_components,
             self.context.component_limits,
             self.context.validation
         )
+        print(f"📄 Report saved to: {report_path}")
         print()
         print(f"🎉 SUCCESS! Open: {Path(report_path).absolute()}")
         
