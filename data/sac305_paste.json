@@ -1,0 +1,6 @@
+{
+  "name": "SAC305 Solder Paste",
+  "alloy": "Sn96.5/Ag3.0/Cu0.5",
+  "liquidus_temp": 217.0,
+  "peak_temp_range": [240.0, 250.0]
+}
