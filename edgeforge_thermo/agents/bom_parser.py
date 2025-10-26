@@ -6,7 +6,22 @@ class BOMParserAgent:
     """Agent 1: BOM parsing specialist"""
 
     def parse(self, filepath: str) -> List[Component]:
-        """Parse BOM CSV into structured components"""
+        """
+        Parse a BOM CSV file into a list of Component objects.
+        
+        Expects the CSV to contain columns: "designator", "mpn", "package", and "qty".
+        Optional columns:
+        - "thermal_mass" (defaults to "medium")
+        - "component_type" (defaults to "Unknown")
+        
+        Rows that fail to construct a Component are skipped and a warning is printed for each skipped row.
+        
+        Parameters:
+            filepath (str): Path to the BOM CSV file.
+        
+        Returns:
+            List[Component]: List of successfully parsed Component objects.
+        """
         print(f"🤖 BOM Parser Agent: Reading {filepath}")
 
         df = pd.read_csv(filepath)
