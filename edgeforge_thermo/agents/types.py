@@ -50,24 +50,10 @@ class ReflowStep(BaseModel):
 
     @property
     def duration_s(self) -> int:
-        """
-        Compute the duration of the reflow step in seconds.
-        
-        Returns:
-            duration_s (int): The number of seconds between `start_time_s` and `end_time_s` (end_time_s - start_time_s).
-        """
         return self.end_time_s - self.start_time_s
 
     @property
     def ramp_rate_c_per_s(self) -> float:
-        """
-        Compute the average absolute temperature change per second for the step.
-        
-        If the step duration is zero, returns 0.0.
-        
-        Returns:
-            float: Absolute ramp rate in degrees Celsius per second (`0.0` if duration is zero).
-        """
         if self.duration_s == 0:
             return 0.0
         return abs(self.end_temp_c - self.start_temp_c) / self.duration_s
@@ -81,15 +67,7 @@ class ReflowProfile(BaseModel):
     total_duration_s: int
 
     def get_temp_at_time(self, t: int) -> float:
-        """
-        Compute the temperature in degrees Celsius at a given time within the reflow profile.
-        
-        Parameters:
-            t (int): Time in seconds from the start of the profile.
-        
-        Returns:
-            float: Temperature in degrees Celsius at time `t`. If `t` falls within a profile step, returns the linearly interpolated temperature for that step; if `t` is after the last step, returns the last step's end temperature.
-        """
+        """Linear interpolation for any time point"""
         for step in self.steps:
             if step.start_time_s <= t <= step.end_time_s:
                 progress = (t - step.start_time_s) / max(1, step.duration_s)

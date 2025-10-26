@@ -8,19 +8,7 @@ class PresenterAgent:
     def generate_report(
         self, profile: ReflowProfile, validation: ValidationResult, output_dir: str = "report"
     ) -> str:
-        """
-        Generate a visual reflow report and save it to disk.
-        
-        Saves a profile chart (profile.png) and an HTML report (index.html) into the specified output directory.
-        
-        Parameters:
-            profile (ReflowProfile): Reflow profile data to visualize and summarize.
-            validation (ValidationResult): Validation results to include in the report.
-            output_dir (str): Directory where report files will be written (created if missing).
-        
-        Returns:
-            html_path (str): Filesystem path to the generated HTML report (index.html).
-        """
+        """Create HTML report with profile visualization"""
         print("📊 Presenter Agent: Generating report...")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -37,15 +25,7 @@ class PresenterAgent:
         return html_path
 
     def _create_chart(self, profile: ReflowProfile, output_path: str):
-        """
-        Create and save a temperature-versus-time chart representing the reflow profile.
-        
-        The generated chart plots temperature over time, adds reference lines for the liquidus temperature and the profile peak temperature, and visually highlights each profile phase. The resulting image is written to the given output_path (PNG).
-        
-        Parameters:
-            profile (ReflowProfile): Reflow profile containing step entries with start/end times and temperatures and a peak_temp_c attribute.
-            output_path (str): Filesystem path where the chart image will be saved (PNG).
-        """
+        """Generate temperature vs time chart"""
         times = []
         temps = []
 
@@ -79,21 +59,7 @@ class PresenterAgent:
         plt.close()
 
     def _create_html(self, profile: ReflowProfile, validation: ValidationResult) -> str:
-        """
-        Build an HTML report summarizing a reflow profile and its validation results.
-        
-        Parameters:
-            profile (ReflowProfile): Reflow profile containing steps and aggregate metrics
-                (e.g., peak_temp_c, time_above_liquidus_s, total_duration_s) used to
-                populate the report content.
-            validation (ValidationResult): Validation outcome containing `passed`,
-                `violations`, and `warnings` used to indicate status and list issues.
-        
-        Returns:
-            html (str): A complete HTML document as a string that includes validation
-            status, key metrics, an embedded profile chart reference, a table of profile
-            steps, and sections for violations and warnings.
-        """
+        """Generate HTML report"""
         status_emoji = "✅" if validation.passed else "❌"
         status_color = "green" if validation.passed else "red"
 

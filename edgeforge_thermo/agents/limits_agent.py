@@ -6,28 +6,11 @@ class LimitsAgent:
     """Agent 2: Component thermal limits specialist"""
 
     def __init__(self, limits_db_path: str = "data/limits_database.json"):
-        """
-        Create a LimitsAgent and load the component limits database from the specified JSON file.
-        
-        Parameters:
-            limits_db_path (str): Filesystem path to a JSON file containing component limit specifications (default: "data/limits_database.json").
-        
-        Description:
-            Loads the JSON file into self.db as a mapping from component MPN to its limit data and prints a one-line summary indicating how many component specs were loaded.
-        """
         self.db: Dict[str, dict] = json.load(open(limits_db_path))
         print(f"🤖 Limits Agent: Loaded {len(self.db)} component specs")
 
     def get_limits_for_bom(self, components: List[Component]) -> List[ComponentLimit]:
-        """
-        Match BOM components to entries in the loaded thermal limits database.
-        
-        Parameters:
-        	components (List[Component]): Bill of materials components to match by MPN.
-        
-        Returns:
-        	List[ComponentLimit]: ComponentLimit objects for components whose MPN was found in the database.
-        """
+        """Match BOM components to thermal limits database"""
         limits: List[ComponentLimit] = []
         coverage = 0
 
@@ -51,18 +34,7 @@ class LimitsAgent:
         return limits
 
     def get_most_restrictive(self, limits: List[ComponentLimit]) -> ComponentLimit:
-        """
-        Identify the most thermally restrictive component from a list of component limits.
-        
-        Parameters:
-            limits (List[ComponentLimit]): Component limit records to evaluate.
-        
-        Returns:
-            ComponentLimit: The component limit with the lowest `max_temp_c`.
-        
-        Raises:
-            ValueError: If `limits` is empty.
-        """
+        """Find the most thermally sensitive component"""
         if not limits:
             raise ValueError("No component limits provided")
 

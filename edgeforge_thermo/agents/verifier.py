@@ -10,23 +10,7 @@ class VerifierAgent:
         limits: List[ComponentLimit],
         paste: PasteProfile,
     ) -> ValidationResult:
-        """
-        Validate a reflow profile against component and paste constraints.
-        
-        Checks the profile for peak temperature violations, excessive ramp rates, insufficient time above liquidus (TAL), and short soak duration; aggregates violations and warnings and returns pass/fail status with summary metrics.
-        
-        Parameters:
-        	profile (ReflowProfile): The reflow heating profile to validate.
-        	limits (List[ComponentLimit]): Component-specific constraints to check (e.g., max temps, max ramp rates, min soak times).
-        	paste (PasteProfile): Paste-specific constraints used for TAL comparison.
-        
-        Returns:
-        	ValidationResult: Result object containing:
-        		- passed (bool): `true` if no violations were found, `false` otherwise.
-        		- violations (List[str]): Fatal constraint breach messages.
-        		- warnings (List[str]): Non-fatal advisory messages.
-        		- metrics (dict): Summary metrics with keys `peak_temp_c`, `tal_s`, `total_duration_s`, and `max_ramp_rate`.
-        """
+        """Validate profile against all constraints"""
         print("🔍 Verifier Agent: Checking constraints...")
 
         violations: List[str] = []

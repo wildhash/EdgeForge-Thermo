@@ -10,19 +10,6 @@ class Orchestrator:
     """Thin coordination layer - delegates all work to agents"""
 
     def __init__(self):
-        """
-        Create an Orchestrator instance that sets up a shared AgentContext and the five agent components used by the workflow.
-        
-        Initializes:
-        - self.context: shared AgentContext for passing data between agents.
-        - self.bom_parser: BOMParserAgent for parsing bill-of-materials.
-        - self.limits_agent: LimitsAgent for retrieving and computing component limits.
-        - self.planner: PlannerAgent for generating proposed profiles (exposes `paste` as paste profile).
-        - self.verifier: VerifierAgent for validating proposed profiles against limits and paste profile.
-        - self.presenter: PresenterAgent for generating final reports.
-        
-        Also prints a startup banner to stdout.
-        """
         print("🎯 EdgeForge-Thermo Multi-Agent System Starting...\n")
         self.context = AgentContext()
 
@@ -34,17 +21,7 @@ class Orchestrator:
         self.presenter = PresenterAgent()
 
     def run(self, bom_path: str = "data/sample_bom.csv") -> str:
-        """
-        Run the five-stage multi-agent pipeline to produce a report from a BOM.
-        
-        Executes: (1) parse the BOM at bom_path and store components in self.context, (2) retrieve component limits and compute the most restrictive limits if available, (3) set the planner paste profile and generate a proposed profile, (4) verify the proposed profile against limits and paste profile, and (5) generate a report and return its path. The method updates self.context with results from each stage.
-        
-        Parameters:
-            bom_path (str): Filesystem path to the BOM CSV to parse.
-        
-        Returns:
-            report_path (str): Filesystem path to the generated report.
-        """
+        """Execute multi-agent workflow"""
 
         # Agent 1: Parse BOM
         self.context.bom_components = self.bom_parser.parse(bom_path)
@@ -79,11 +56,6 @@ class Orchestrator:
         return report_path
 
 def main():
-    """
-    Create an Orchestrator instance and execute the multi-agent workflow.
-    
-    Instantiates the Orchestrator and runs its pipeline, which parses a BOM, computes limits, generates a plan, verifies it, and produces a report.
-    """
     orchestrator = Orchestrator()
     orchestrator.run()
 
