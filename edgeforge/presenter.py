@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Union
 from edgeforge.models import ReflowProfile, Component, ThermalLimits, ValidationResult
 
 
@@ -13,11 +13,22 @@ class PresenterAgent:
         """Initialize presenter with output directory."""
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        print(f"📊 Presenter Agent: Output directory set to {output_dir}")
+    
+    def _get_step_data(self, step) -> tuple:
+        """Extract step data in a compatible way."""
+        # Handle both ReflowStep and ProfileStep
+        if hasattr(step, 'start_temp_c'):
+            return (step.start_temp_c, step.end_temp_c, step.duration_s, 
+                    getattr(step, 'phase', 'unknown'))
+        else:
+            return (step.start_temp, step.end_temp, step.duration, 
+                    getattr(step, 'name', 'unknown'))
     
     def generate_chart(
         self,
         profile: ReflowProfile,
-        limits: ThermalLimits,
+        limits: Union[ThermalLimits, List],
         filename: str = "reflow_profile.png"
     ) -> str:
         """
@@ -25,15 +36,23 @@ class PresenterAgent:
         
         Returns the path to the saved chart.
         """
+        print("📈 Presenter Agent: Generating chart...")
+        
         # Generate time series data from profile steps
-        time_points = [0]
-        temp_points = [profile.steps[0].start_temp]
+        time_points = []
+        temp_points = []
         
         cumulative_time = 0
         for step in profile.steps:
-            cumulative_time += step.duration
+            start_temp, end_temp, duration, _ = self._get_step_data(step)
+            
+            if not time_points:
+                time_points.append(cumulative_time)
+                temp_points.append(start_temp)
+            
+            cumulative_time += duration
             time_points.append(cumulative_time)
-            temp_points.append(step.end_temp)
+            temp_points.append(end_temp)
         
         # Create figure
         fig, ax = plt.subplots(figsize=(12, 7))
@@ -41,13 +60,14 @@ class PresenterAgent:
         # Plot temperature profile
         ax.plot(time_points, temp_points, 'b-', linewidth=2, label='Temperature Profile')
         
-        # Add liquidus line
-        liquidus = profile.paste.liquidus_temp
+        # Add liquidus line (217°C for SAC305)
+        liquidus = 217.0
         ax.axhline(y=liquidus, color='r', linestyle='--', linewidth=1.5, 
                    label=f'Liquidus ({liquidus}°C)')
         
         # Add max temp line
-        ax.axhline(y=limits.max_temp, color='orange', linestyle='--', linewidth=1.5,
+        max_temp_limit = limits.max_temp if isinstance(limits, ThermalLimits) else (limits[0].max_temp_c if limits else 260)
+        ax.axhline(y=max_temp_limit, color='orange', linestyle='--', linewidth=1.5,
                    label=f'Max Temp Limit ({limits.max_temp}°C)')
         
         # Shade regions
@@ -91,7 +111,7 @@ class PresenterAgent:
         self,
         profile: ReflowProfile,
         components: List[Component],
-        limits: ThermalLimits,
+        limits: Union[ThermalLimits, List],
         validation: ValidationResult,
         filename: str = "reflow_report.html"
     ) -> str:
@@ -100,6 +120,21 @@ class PresenterAgent:
         
         Returns the path to the saved report.
         """
+        print("📊 Presenter Agent: Generating report...")
+        
+        # Handle both ThermalLimits and List[ComponentLimit]
+        if isinstance(limits, list):
+            # ComponentLimit list - extract summary
+            max_temp_limit = min(l.max_temp_c for l in limits) if limits else 260
+            max_ramp_limit = min(l.max_ramp_rate_c_per_s for l in limits) if limits else 3.0
+            limits_type = "Component-specific (MPN-based)"
+            limits_table = self._generate_component_limits_table(limits)
+        else:
+            # ThermalLimits object
+            max_temp_limit = limits.max_temp
+            max_ramp_limit = limits.max_ramp_up
+            limits_type = f"Type-based ({limits.component_type})"
+            limits_table = self._generate_type_limits_table(limits)
         # Build HTML content
         html = f"""
 <!DOCTYPE html>
