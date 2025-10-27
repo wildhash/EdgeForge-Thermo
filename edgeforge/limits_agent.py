@@ -1,13 +1,16 @@
-"""Limits Agent - Provides thermal limits for different component types."""
-from typing import Dict, Optional
-from edgeforge.models import ThermalLimits
+"""Limits Agent - Provides thermal limits for different component types and MPNs."""
+import json
+from pathlib import Path
+from typing import Dict, Optional, List
+from edgeforge.models import ThermalLimits, ComponentLimit, Component
 
 
 class LimitsAgent:
     """Agent responsible for maintaining thermal limit database."""
     
-    def __init__(self):
+    def __init__(self, limits_db_path: Optional[str] = None):
         """Initialize with hardcoded thermal limits for common components."""
+        # Type-based limits (legacy)
         self.thermal_db: Dict[str, ThermalLimits] = {
             'IC': ThermalLimits(
                 component_type='IC',
@@ -50,10 +53,56 @@ class LimitsAgent:
                 max_time_above_liquidus=100.0
             )
         }
+        
+        # MPN-based limits database (new)
+        self.mpn_db: Dict[str, dict] = {}
+        if limits_db_path is None:
+            limits_db_path = "data/limits_database.json"
+        
+        try:
+            with open(limits_db_path, 'r') as f:
+                self.mpn_db = json.load(f)
+            print(f"🤖 Limits Agent: Loaded {len(self.mpn_db)} component specs from database")
+        except FileNotFoundError:
+            print(f"⚠️  Limits Agent: MPN database not found at {limits_db_path}, using type-based limits only")
     
     def get_limits(self, component_type: str) -> Optional[ThermalLimits]:
         """Get thermal limits for a component type."""
         return self.thermal_db.get(component_type)
+    
+    def get_limits_for_bom(self, components: List[Component]) -> List[ComponentLimit]:
+        """Match BOM components to thermal limits database."""
+        limits = []
+        coverage = 0
+        
+        for comp in components:
+            if comp.mpn in self.mpn_db:
+                data = self.mpn_db[comp.mpn]
+                limit = ComponentLimit(
+                    mpn=comp.mpn,
+                    max_temp_c=data["max_temp_c"],
+                    max_ramp_rate_c_per_s=data["max_ramp_rate_c_per_s"],
+                    min_soak_time_s=data["min_soak_time_s"],
+                    min_time_above_liquidus_s=data["min_time_above_liquidus_s"],
+                    notes=data.get("notes", "")
+                )
+                limits.append(limit)
+                coverage += 1
+        
+        cov_pct = (coverage / len(components)) * 100 if components else 0
+        print(f"✅ Limits Agent: Matched {coverage}/{len(components)} components ({cov_pct:.0f}% coverage)")
+        
+        return limits
+    
+    def get_most_restrictive(self, limits: List[ComponentLimit]) -> ComponentLimit:
+        """Find the most thermally sensitive component."""
+        if not limits:
+            raise ValueError("No component limits provided")
+        
+        most_restrictive = min(limits, key=lambda x: x.max_temp_c)
+        print(f"🎯 Limits Agent: Most restrictive component is {most_restrictive.mpn} "
+              f"(Tmax={most_restrictive.max_temp_c}°C)")
+        return most_restrictive
     
     def get_strictest_limits(self, component_types: list[str]) -> ThermalLimits:
         """
